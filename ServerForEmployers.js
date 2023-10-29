@@ -2,15 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const nodemailer = require('nodemailer');
 const app = express();
-
-const port = process.env.PORT || 3001;
-
-app.use(express.json());
-
 const cors = require('cors');
+// const port = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
+
+// app.use(express.json());
+app.use(cors({
+  origin: 'https://logspot.net' // Update with your production domain
+}));
+// app.use(cors());
 
 const corsOptions = {
-  origin: 'http://localhost:3000', 
+  origin: process.env.CORS_ORIGIN || 'https://logspot.net',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204,
@@ -18,18 +21,15 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
 app.get('/', (req, res) => {
-  res.send('Welcome to the server for Employer!');
+  res.send('Welcome to the server for Employers!');
 });
-
 
 app.post('/it-hiring', (req, res) => {
   const formData = req.body;
 
-console.log ("veikia PORT 3001")
+  console.log('Server is running on port 3001');
 
- 
   sendEmail(formData)
     .then(() => {
       res.json({ message: 'Form submitted successfully' });
@@ -40,22 +40,21 @@ console.log ("veikia PORT 3001")
     });
 });
 
-
 async function sendEmail(formData) {
   const transporter = nodemailer.createTransport({
-    host: 'lynas.serveriai.lt',
-    port: 465, 
-    secure: true, 
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: 'info@logspot.lt', 
-      pass: 'h9bTAM9NQ8QH5K69', 
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS, // Use your real email password
     },
   });
 
   const mailOptions = {
-    from: 'info@logspot.lt',
-    to: 'info@logspot.lt',
-    subject: 'New Form Submission',
+    from: process.env.EMAIL_USER,
+    to: 'info@logspot.net',
+    subject: 'Business Application Form',
     html: `
       <p>Name: ${formData.firstName} ${formData.secondName}</p>
       <p>Company Name: ${formData.companyName}</p>

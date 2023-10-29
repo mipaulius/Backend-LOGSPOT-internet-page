@@ -4,10 +4,19 @@ const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const app = express();
-const port = 3002;
+const dotenv = require('dotenv'); // Import dotenv
 
-app.use(cors());
+dotenv.config(); // Load environment variables from .env file
+
+const app = express();
+// const port = 3002;
+const PORT = process.env.PORT || 8080;
+
+app.use(cors({
+  origin: 'https://logspot.net' // Update with your production domain
+}));
+
+// app.use(cors());
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -18,9 +27,9 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage }).single('cvFile'); // Change fields to single for a single file
+const upload = multer({ storage }).single('cvFile');
 
-app.post('/home', (req, res) => {
+app.post('/join-us', (req, res) => {
   upload(req, res, (err) => {
     if (err) {
       console.error('Error uploading files:', err);
@@ -31,30 +40,28 @@ app.post('/home', (req, res) => {
 
     console.log('CV File Info (from form):', cvFile);
 
-
-    const formData = req.body;  // Get the form data
+    const formData = req.body;
     console.log('Form data received:', formData);
 
-    // Send email with the form data and CV file
     sendEmail(formData, cvFile)
       .then(() => {
         res.status(200).send('Form submitted successfully! Email sent.');
       })
       .catch((error) => {
         console.error('Error sending email:', error);
-        res.status(500).send('Error submitting form. Please try again later.');
+        res.status(500).send('Error submitting the form. Please try again later.');
       });
   });
 });
 
 function sendEmail(formData, cvFile) {
   const transporter = nodemailer.createTransport({
-    host: 'lynas.serveriai.lt',
-    port: 465, 
-    secure: true, 
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: 'info@logspot.lt', 
-      pass: 'h9bTAM9NQ8QH5K69', 
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS, // Access password from environment variable
     },
   });
 
@@ -72,9 +79,9 @@ function sendEmail(formData, cvFile) {
   const preferredPositionString = preferredPosition.join(', ');
 
   const mailOptions = {
-    from: 'info@logspot.lt',
-    to: 'info@logspot.lt',
-    subject: 'New Job Application Form Submission',
+    from: process.env.EMAIL_USER,
+    to: 'info@logspot.net',
+    subject: 'Candidate Form',
     html: `
       <p><strong>First Name:</strong> ${formData.firstName}</p>
       <p><strong>Last Name:</strong> ${formData.lastName}</p>
@@ -115,7 +122,6 @@ function sendEmail(formData, cvFile) {
 app.get('/', (req, res) => {
   res.send('Hello, this is the server!');
 });
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
